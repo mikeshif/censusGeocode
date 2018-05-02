@@ -120,7 +120,7 @@ namespace testGeoCodeAPI
 
         private static string headerGeo()
         {
-            return "Unique ID" + "," + "Address" + "," + "," + "Address Match" + "," + "Match Type" + "," +
+            return "Unique ID" + "," + "Address" + "," + "Address Match" + "," + "Match Type" + "," +
                                     "Matched Address" + "," + "Coordinates" + "," +
                                     "Tiger Line ID" + "," + "Side" + "," + "State FIPS" + "," +
                                     "County FIPS" + "," + "TRACT" + "," + "BLOCK";
