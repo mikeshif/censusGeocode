@@ -14,7 +14,7 @@ namespace testGeoCodeAPI
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var sWatch = new Stopwatch();
             sWatch.Start();
@@ -25,7 +25,8 @@ namespace testGeoCodeAPI
             // Start a task 
             // block the main Console thread until your asynchronous work has completed.
 
-            Task.Run(() => GeocodeResultAsync()).GetAwaiter().GetResult();
+            Task.Run(function: ()
+                => GeocodeResultAsync()).GetAwaiter().GetResult();
             sWatch.Stop();
             TimeSpan ts = sWatch.Elapsed;
             string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
@@ -33,13 +34,13 @@ namespace testGeoCodeAPI
             ts.Milliseconds / 10);
             Console.WriteLine("RunTime " + elapsedTime);
             //Console.WriteLine(value: sWatch.Elapsed);
-                //await GeocodeResultAsync();              
-                //await GeocodeResultAsync(); //.GetAwaiter().GetResult();
-                //if (sWatch.ElapsedMilliseconds > 80000)
-                //{
-                //    throw new TimeoutException();
-                //}
-              //  contLooping = false;
+            //await GeocodeResultAsync();              
+            //await GeocodeResultAsync(); //.GetAwaiter().GetResult();
+            //if (sWatch.ElapsedMilliseconds > 80000)
+            //{
+            //    throw new TimeoutException();
+            //}
+            //  contLooping = false;
             //}
 
         }
@@ -49,68 +50,76 @@ namespace testGeoCodeAPI
             string filePath = @"C:\\Users\\mikes\\Desktop\\Addresses.csv";
             try
             {
-                using (HttpClient client = new HttpClient())
-                {
-                    using (var uriContent = new MultipartFormDataContent())
-                    {
+                HttpClient client = new HttpClient();
 
-                        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
-                                           | SecurityProtocolType.Tls11
-                                           | SecurityProtocolType.Tls12
-                                           | SecurityProtocolType.Ssl3;
-                        var uriParameters = new[]
-                        {
+                var uriContent = new MultipartFormDataContent();
+
+
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls
+                                   | SecurityProtocolType.Tls11
+                                   | SecurityProtocolType.Tls12
+                                   | SecurityProtocolType.Ssl3;
+                var uriParameters = new[]
+                {
                         new KeyValuePair<string, string>("benchmark", "Public_AR_Current"),
                         new KeyValuePair<string, string>("vintage", "Current_Current"),
                         new KeyValuePair<string, string>("returntype","locations")
                         };
 
-                        foreach (var keyValuePair in uriParameters)
+                foreach (var keyValuePair in uriParameters)
+                {
+                    uriContent.Add(new StringContent(keyValuePair.Value), keyValuePair.Key);
+                }
+                var addressFileContent = new ByteArrayContent(content: File.ReadAllBytes(filePath));
+                addressFileContent.Headers.ContentDisposition =
+                        new ContentDispositionHeaderValue("form-data")
                         {
-                            uriContent.Add(new StringContent(keyValuePair.Value), keyValuePair.Key);
-                        }
-                        var addressFileContent = new ByteArrayContent(content: File.ReadAllBytes(filePath));
-                        addressFileContent.Headers.ContentDisposition =
-                                new ContentDispositionHeaderValue("form-data")
-                                {
-                                    Name = "addressFile", // the missing piece
+                            Name = "addressFile", // the missing piece
                                     FileName = "Addresses.csv", // The trick 
                                 };
-                        uriContent.Add(addressFileContent);
-                        //var cts = new CancellationTokenSource();
-                        //cts.CancelAfter(millisecondsDelay: 300000); // 5 minutes
-                        var baseUri = "https://geocoding.geo.census.gov/geocoder/geographies/addressbatch";
-                        HttpResponseMessage result = await client.PostAsync(baseUri, uriContent).ConfigureAwait(false);
+                uriContent.Add(addressFileContent);
+                var cts = new CancellationTokenSource();
 
-                        //client.Timeout = TimeSpan.FromSeconds(300);
-                        string response = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
-                       
+                if (cts != null)
+                    cts.Cancel();
+                cts = new CancellationTokenSource();
+
+                cts.CancelAfter(millisecondsDelay: 300000); // 5 minutes
+                var baseUri = "https://geocoding.geo.census.gov/geocoder/geographies/addressbatch";
+                HttpResponseMessage result = await client.PostAsync(baseUri, uriContent).ConfigureAwait(false);
+
+                //client.Timeout = TimeSpan.FromSeconds(300);
+                string response = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+
 #if DEBUG
-                        Console.WriteLine(response);
+                Console.WriteLine(response);
 #endif
-                        if (result.IsSuccessStatusCode)
-                        {
+                if (result.IsSuccessStatusCode)
+                {
 
-                            string Outputpath = @"C:\\Users\\mikes\\Desktop\\OutGeo.csv";
-                            using (var csvWriter = new StreamWriter(Outputpath))
-                            {
-                                string geoCodeHeaders = headerGeo();
-                                //File.WriteAllText(Outputpath, clientHeader);
-                                //int i = 1;
-                                //string output = String.Format("{0, -60}", geoCodeHeaders);
-                                await csvWriter.WriteLineAsync(geoCodeHeaders);
-                                await csvWriter.WriteLineAsync(response);
-                                //cts.Dispose();
-                            }
-                        }
+                    string Outputpath = @"C:\\Users\\mikes\\Desktop\\OutGeo.csv";
+                    using (var csvWriter = new StreamWriter(Outputpath))
+                    {
+                        string geoCodeHeaders = headerGeo();
+                        //File.WriteAllText(Outputpath, clientHeader);
+                        //int i = 1;
+                        //string output = String.Format("{0, -60}", geoCodeHeaders);
+                        await csvWriter.WriteLineAsync(geoCodeHeaders);
+                        await csvWriter.WriteLineAsync(response);
+                        csvWriter.Dispose();
+                        csvWriter.Close();
+                        //cts.Dispose();
                     }
                 }
+
+
             }
-            catch(TimeoutException ex)
+            catch (TaskCanceledException ex)
             {
                 Console.WriteLine("{0} First exception caught.", ex);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine("{0} Second exception caught.", ex);
             }
