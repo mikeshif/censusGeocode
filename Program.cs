@@ -16,8 +16,7 @@ namespace testGeoCodeAPI
         {
             var sWatch = new Stopwatch();
             sWatch.Start();
-            Task.Run(function: ()
-                => GeocodeResultAsync()).GetAwaiter().GetResult();
+            GeocodeResultAsync().GetAwaiter().GetResult();
             sWatch.Stop();
             TimeSpan ts = sWatch.Elapsed;
             string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",
@@ -32,7 +31,7 @@ namespace testGeoCodeAPI
         /// <returns></returns>
         private static async Task GeocodeResultAsync()
         {
-            string filePath = @"C:\\Users\\mikes\\Desktop\\Addresses.csv";
+            string filePath = @"C:\\Users\\mikes\\Desktop\\censusgeocode-master\\Addresses.csv";
             try
             {
                 HttpClient client = new HttpClient();
@@ -82,10 +81,9 @@ namespace testGeoCodeAPI
             {
                 cts.Cancel();
             }
-
             cts = new CancellationTokenSource();
             var baseUri = "https://geocoding.geo.census.gov/geocoder/geographies/addressbatch";
-            HttpResponseMessage result = await client.PostAsync(baseUri, uriContent).ConfigureAwait(false);
+            HttpResponseMessage result = await client.PostAsync(baseUri, uriContent, cts.Token).ConfigureAwait(false);
             string response = await result.Content.ReadAsStringAsync().ConfigureAwait(false);
 #if DEBUG
             Console.WriteLine(response);
@@ -95,12 +93,9 @@ namespace testGeoCodeAPI
                 string Outputpath = @"C:\\Users\\mikes\\Desktop\\OutGeo.csv";
                 using (var csvWriter = new StreamWriter(Outputpath))
                 {
-                    string geoCodeHeaders = headerGeo();
-                    //File.WriteAllText(Outputpath, clientHeader);
-                    //int i = 1;
-                    //string output = String.Format("{0, -60}", geoCodeHeaders);
-                    await csvWriter.WriteLineAsync(geoCodeHeaders);
-                    await csvWriter.WriteLineAsync(response);
+                    string geoCodeHeaders = HeaderGeo();
+                    await csvWriter.WriteLineAsync(geoCodeHeaders).ConfigureAwait(false);
+                    await csvWriter.WriteLineAsync(response).ConfigureAwait(false);
                     csvWriter.Dispose();
                     csvWriter.Close();
                     cts.Dispose();
@@ -118,12 +113,11 @@ namespace testGeoCodeAPI
             };
         }
 
-        private static string headerGeo()
+        private static string HeaderGeo()
         {
             return "Unique ID" + "," + "Address" + "," + "Address Match" + "," + "Match Type" + "," +
-                                    "Matched Address" + "," + "Coordinates" + "," +
-                                    "Tiger Line ID" + "," + "Side" + "," + "State FIPS" + "," +
-                                    "County FIPS" + "," + "TRACT" + "," + "BLOCK";
+                   "Matched Address" + "," + "Coordinates" + "," + "Tiger Line ID" + "," + "Side" + "," + 
+                   "State FIPS" + "," + "County FIPS" + "," + "TRACT" + "," + "BLOCK";
         }
     }
 }
