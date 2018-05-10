@@ -31,7 +31,7 @@ namespace testGeoCodeAPI
         /// <returns></returns>
         private static async Task GeocodeResultAsync()
         {
-            string filePath = @"C:\\Users\\mikes\\Desktop\\censusgeocode-master\\Addresses.csv";
+            string filePath = @"C:\\Addresses.csv";
             try
             {
                 HttpClient client = new HttpClient();
@@ -90,7 +90,7 @@ namespace testGeoCodeAPI
 #endif
             if (result.IsSuccessStatusCode)
             {
-                string Outputpath = @"C:\\Users\\mikes\\Desktop\\OutGeo.csv";
+                string Outputpath = @"C:\\OutGeo.csv";
                 using (var csvWriter = new StreamWriter(Outputpath))
                 {
                     string geoCodeHeaders = HeaderGeo();
